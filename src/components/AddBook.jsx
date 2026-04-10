@@ -1,0 +1,277 @@
+import { useState } from "react";
+import { BookOpen, User, Image, Plus, ArrowLeft, Star } from "lucide-react";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { addBook } from "../utils/bookSlice";
+import { toast } from "react-toastify";
+
+const AddBook = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // form state kept as a single object for easy reset
+  const [book, setBook] = useState({
+    id: "",
+    title: "",
+    rating: "",
+    author: "",
+    description: "",
+    catagory: "",
+    image: "",
+    authorDescription: "",
+    storyDescription: "",
+    gainFromBook: "",
+  });
+
+  const [errors, setErrors] = useState({});
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Track form input and clear a field's error as soon as it changes
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setBook({ ...book, [name]: value });
+    if (errors[name]) setErrors({ ...errors, [name]: "" });
+  };
+
+  // Validate required fields, then dispatch and reset
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    const newErrors = {};
+    if (!book.title.trim()) newErrors.title = "Title is required";
+    if (!book.author.trim()) newErrors.author = "Author is required";
+    if (!book.catagory) newErrors.catagory = "Category is required";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    dispatch(
+      addBook({
+        ...book,
+        // timestamp keeps keys unique without extra dependencies
+        id: Date.now(),
+        rating: parseFloat(book.rating) || 0,
+        detailedDescription: {
+          story: book.storyDescription || "No story description available.",
+          authorBio: book.authorDescription || "No author description available.",
+          excitingContext: book.gainFromBook || "No additional information available."
+        }
+      })
+    );
+
+    setIsSubmitted(true);
+      // ✅ SUCCESS TOAST
+  toast.success("📚 Book Added Successfully!");
+
+    setTimeout(() => {
+      // return form to a clean slate after a short success state
+      setBook({
+        id: "",
+        title: "",
+        rating: "",
+        author: "",
+        description: "",
+        catagory: "",
+        image: "",
+        authorDescription: "",
+        storyDescription: "",
+        gainFromBook: "",
+      });
+      setIsSubmitted(false);
+      navigate("/books");
+    }, 1500);
+  };
+
+  return (
+    <div className="min-h-screen bg-linear-to-br from-purple-300 via-cyan-100 to-blue-50 flex items-center justify-center px-4 py-12">
+      <div className="max-w-2xl w-full">
+
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-teal-600 rounded-full mb-4 shadow-lg">
+            <BookOpen className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">Add New Book</h1>
+          <p className="text-gray-600">Share your favorite reads with the community</p>
+        </div>
+
+        {/* Form Card */}
+        <div className="bg-white shadow-2xl rounded-2xl overflow-hidden">
+          <div className="bg-linear-to-r from-teal-600 to-cyan-600 h-2"></div>
+
+          <form onSubmit={handleSubmit} className="p-8">
+
+            {/* Success Message */}
+            {isSubmitted && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
+                <span className="text-green-800 font-medium">
+                  ✅ Book added successfully!
+                </span>
+              </div>
+            )}
+
+            {/* Title */}
+            <InputField
+              label="Book Title"
+              name="title"
+              value={book.title}
+              onChange={handleChange}
+              error={errors.title}
+              placeholder="Enter the book title..."
+              icon={<BookOpen className="w-5 h-5 text-gray-400" />}
+            />
+            {/* Rating */}
+            <InputField
+              label="Book Rating"
+              name="rating"
+              type="number"
+              value={book.rating}
+              onChange={handleChange}
+              error={errors.rating}
+              placeholder="Enter the book rating..."
+              icon={<Star className="w-5 h-5 text-gray-400" />}
+            />
+
+
+            {/* catagory */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Catagory <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="catagory"
+                value={book.catagory}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-teal-500 ${
+                  errors.catagory
+                    ? "border-red-300 bg-red-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <option value="">Select catagory</option>
+                <option value="fiction">Fiction</option>
+                <option value="non-fiction">Non-Fiction</option>
+                <option value="science">Science</option>
+              </select>
+              {errors.catagory && (
+                <p className="mt-1 text-sm text-red-600">{errors.catagory}</p>
+              )}
+            </div>
+
+            {/* Author */}
+            <InputField
+              label="Author"
+              name="author"
+              value={book.author}
+              onChange={handleChange}
+              error={errors.author}
+              placeholder="Enter the author name..."
+              icon={<User className="w-5 h-5 text-gray-400" />}
+            />
+
+            {/* Image URL */}
+            <InputField
+              label="Cover Image URL"
+              name="image"
+              value={book.image}
+              onChange={handleChange}
+              placeholder="https://example.com/book-cover.jpg"
+              icon={<Image className="w-5 h-5 text-gray-400" />}
+            />
+
+            {/* Preview */}
+            {book.image && (
+              <img
+                src={book.image}
+                alt="Preview"
+                className="h-40 mx-auto rounded-lg shadow-md mb-6"
+              />
+            )}
+
+            {/* Textareas */}
+            <Textarea 
+              label="Brief Description" 
+              name="description" 
+              value={book.description} 
+              onChange={handleChange} 
+              placeholder="Write a brief description of the book..."
+            />
+           
+            {/* Actions */}
+            <div className="flex gap-4 mt-6">
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-lg font-semibold hover:bg-gray-50"
+              >
+                <ArrowLeft className="inline w-4 h-4 mr-2" />
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={isSubmitted}
+                className={`flex-1 px-6 py-3 rounded-lg font-semibold text-white transition ${
+                  isSubmitted
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-linear-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
+                }`}
+              >
+                <Plus className="inline w-4 h-4 mr-2" />
+                Add Book
+              </button>
+            </div>
+
+          </form>
+        </div>
+
+        <p className="text-center text-sm text-gray-500 mt-6">
+          Fields marked with <span className="text-red-500">*</span> are required
+        </p>
+      </div>
+    </div>
+  );
+};
+
+/* 🔹 Reusable Components */
+
+const InputField = ({ label, name, value, onChange, error, icon, placeholder }) => (
+  <div className="mb-6">
+    <label className="block text-sm font-semibold text-gray-700 mb-2">
+      {label} {error && <span className="text-red-500">*</span>}
+    </label>
+    <div className="relative">
+      <div className="absolute inset-y-0 left-4 flex items-center">{icon}</div>
+      <input
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-teal-500 ${
+          error ? "border-red-300 bg-red-50" : "border-gray-200 hover:border-gray-300"
+        }`}
+      />
+    </div>
+    {error && <p className="text-sm text-red-600 mt-1">{error}</p>}
+  </div>
+);
+
+const Textarea = ({ label, name, value, onChange, placeholder }) => (
+  <div className="mb-6">
+    <label className="block text-sm font-semibold text-gray-700 mb-2">
+      {label}
+    </label>
+    <textarea
+      name={name}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      rows="4"
+      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-teal-500"
+    />
+  </div>
+);
+
+export default AddBook;
